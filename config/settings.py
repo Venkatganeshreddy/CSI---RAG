@@ -32,13 +32,14 @@ RATE_LIMIT_WINDOW_SECONDS = 60
 CHUNK_TARGET_TOKENS = 512
 CHUNK_ROW_OVERLAP = 2
 
-# --- Embeddings ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_BATCH_SIZE = 100
+# --- Embeddings (HuggingFace sentence-transformers, runs locally) ---
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+EMBEDDING_BATCH_SIZE = 64
 
-# --- Chat ---
-CHAT_MODEL = "gpt-4o"
+# --- Chat (OpenRouter API — OpenAI-compatible) ---
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+CHAT_MODEL = "openai/gpt-4o"
 CHAT_TEMPERATURE = 0.1
 CHAT_MAX_HISTORY_TURNS = 5
 RETRIEVER_TOP_K = 8

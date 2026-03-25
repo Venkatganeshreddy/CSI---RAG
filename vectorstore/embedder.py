@@ -1,35 +1,36 @@
-"""OpenAI embedding wrapper with batching and retry."""
+"""HuggingFace sentence-transformers embedding wrapper (runs locally, free)."""
 
 from __future__ import annotations
 
 import logging
 
-from openai import OpenAI
-from tenacity import retry, stop_after_attempt, wait_exponential
+from sentence_transformers import SentenceTransformer
 
-from config.settings import EMBEDDING_BATCH_SIZE, EMBEDDING_MODEL, OPENAI_API_KEY
+from config.settings import EMBEDDING_BATCH_SIZE, EMBEDDING_MODEL
 
 logger = logging.getLogger(__name__)
 
-_client = OpenAI(api_key=OPENAI_API_KEY)
+_model: SentenceTransformer | None = None
 
 
-@retry(wait=wait_exponential(min=1, max=30), stop=stop_after_attempt(5))
-def _embed_batch(texts: list[str]) -> list[list[float]]:
-    resp = _client.embeddings.create(input=texts, model=EMBEDDING_MODEL)
-    return [item.embedding for item in resp.data]
+def _get_model() -> SentenceTransformer:
+    global _model
+    if _model is None:
+        logger.info("Loading embedding model: %s", EMBEDDING_MODEL)
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
 
 
 def embed_texts(texts: list[str], batch_size: int = EMBEDDING_BATCH_SIZE) -> list[list[float]]:
-    """Embed a list of texts, batching to stay within API limits."""
-    all_embeddings: list[list[float]] = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        logger.info("Embedding batch %d–%d of %d", i, i + len(batch), len(texts))
-        all_embeddings.extend(_embed_batch(batch))
-    return all_embeddings
+    """Embed a list of texts locally using sentence-transformers."""
+    model = _get_model()
+    logger.info("Embedding %d texts (batch_size=%d)", len(texts), batch_size)
+    embeddings = model.encode(texts, batch_size=batch_size, show_progress_bar=True, normalize_embeddings=True)
+    return embeddings.tolist()
 
 
 def embed_query(text: str) -> list[float]:
     """Embed a single query string."""
-    return _embed_batch([text])[0]
+    model = _get_model()
+    embedding = model.encode(text, normalize_embeddings=True)
+    return embedding.tolist()

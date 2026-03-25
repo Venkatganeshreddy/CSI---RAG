@@ -1,4 +1,4 @@
-"""Conversation management + OpenAI streaming."""
+"""Conversation management + OpenRouter streaming."""
 
 from __future__ import annotations
 
@@ -10,12 +10,16 @@ from config.settings import (
     CHAT_MAX_HISTORY_TURNS,
     CHAT_MODEL,
     CHAT_TEMPERATURE,
-    OPENAI_API_KEY,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
 )
 from rag.prompt_builder import build_messages
 from rag.retriever import RetrievedChunk, retrieve
 
-_client = OpenAI(api_key=OPENAI_API_KEY)
+_client = OpenAI(
+    api_key=OPENROUTER_API_KEY,
+    base_url=OPENROUTER_BASE_URL,
+)
 
 
 class ChatEngine:

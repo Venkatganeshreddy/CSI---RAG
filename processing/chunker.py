@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import tiktoken
-
 from config.settings import CHUNK_ROW_OVERLAP, CHUNK_TARGET_TOKENS
 
 
@@ -16,11 +14,9 @@ class Chunk:
     token_count: int
 
 
-_enc = tiktoken.encoding_for_model("gpt-4o")
-
-
 def _count_tokens(text: str) -> int:
-    return len(_enc.encode(text))
+    """Approximate token count using whitespace splitting (avoids tiktoken dependency)."""
+    return len(text.split())
 
 
 def _detect_type(rows: list[list[str]], headers: list[str]) -> str:
