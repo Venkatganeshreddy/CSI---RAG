@@ -54,18 +54,19 @@ class RAGEngine:
         )
         return len(documents)
 
-    def retrieve(self, query: str, top_k: int = 10) -> list[str]:
+    def retrieve(self, query: str, top_k: int = 8) -> list[str]:
         """Retrieve the most relevant documents for a query."""
         # Always get a fresh reference to avoid stale UUID errors
         collection = self._get_collection()
+        count = collection.count()
 
-        if collection.count() == 0:
+        if count == 0:
             return []
 
         query_embedding = self.embedder.encode([query]).tolist()
         results = collection.query(
             query_embeddings=query_embedding,
-            n_results=min(top_k, collection.count()),
+            n_results=min(top_k, count),
         )
         return results["documents"][0] if results["documents"] else []
 
@@ -73,7 +74,16 @@ class RAGEngine:
         """RAG-powered chat: retrieve context then generate answer."""
         relevant_docs = self.retrieve(query)
 
-        context = "\n\n---\n\n".join(relevant_docs) if relevant_docs else "No data found."
+        # Trim each document to keep context small for faster LLM response
+        max_per_doc = 3000
+        trimmed = []
+        for doc in relevant_docs:
+            if len(doc) > max_per_doc:
+                trimmed.append(doc[:max_per_doc] + "\n...(trimmed)")
+            else:
+                trimmed.append(doc)
+
+        context = "\n\n---\n\n".join(trimmed) if trimmed else "No data found."
 
         system_prompt = (
             "You are a helpful assistant that answers questions based on data from a Google Sheet "
@@ -95,7 +105,7 @@ class RAGEngine:
             model=model or self.model,
             messages=messages,
             temperature=0.3,
-            max_tokens=1024,
+            max_tokens=512,
         )
 
         return response.choices[0].message.content
